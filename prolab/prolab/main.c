@@ -86,6 +86,8 @@ typedef struct
 Bullet bullets[MAX_BULLETS];
 
 // 적 타이파이터 구조체
+char tie[3] = { '|', 'O', '|' };
+
 #define MAX_TIES 30
 
 typedef struct
@@ -97,6 +99,9 @@ typedef struct
 } tieFighter;
 
 tieFighter ties[MAX_TIES];
+
+// 점수 
+int score;
 
 void removeCursor(void) { // 커서를 안보이게 한다
 
@@ -142,6 +147,8 @@ void erasePlayer(int x, int y)
 		putchar(BLANK);
 	}
 }
+
+
 
 void textcolor(int fg_color, int bg_color)
 {
@@ -234,6 +241,84 @@ void vader_damage(int damage) // 베이더의 데미지, 사망 처리
 
 }
 
+void enemyShoot(int tieNum)
+{
+	for (int i = 0; i < MAX_BULLETS; i++)
+	{
+		if (!bullets[i].active)
+		{
+			bullets[i].x = ties[tieNum].x;
+			bullets[i].y = ties[tieNum].y + 3;
+			bullets[i].owner = 2; // 타이 파이터가 주인
+			bullets[i].active = 1;
+
+			break; // 한 발 발사하면 종료
+		}
+	}
+}
+
+void spawnEnemy()
+{
+	for (int i = 0; i < MAX_TIES; i++)
+	{
+		if (!ties[i].active)
+		{
+			ties[i].active = 1;
+			ties[i].life = 1;
+
+			// 루크 화면의 x축 랜덤하게
+			int ranX = rand() % 10 + 50;
+
+			ties[i].x = ranX;
+			ties[i].y = 0;
+
+			enemyShoot(i); // 스폰 되자 마자 탄환 발사
+
+			break; // 적을 하나 스폰했으면 종료
+		}
+	}
+}
+
+void updateEnemy()
+{
+	for (int i = 0; i < MAX_TIES; i++)
+	{
+		if (ties[i].life <= 0)
+		{
+			score += 30; // 타이 파이터 파괴 시 점수 증가하기 
+			ties[i].active = 0;
+		}
+
+		if (ties[i].active)
+		{
+			erasePlayer(ties[i].x, ties[i].y);
+			ties[i].y++;
+
+			// 루크의 화면 최하단으로 갔을 때 베이더 화면으로 넘어가게
+			if (ties[i].x < 80 && ties[i].y >= playArea_y)
+			{
+				ties[i].x += 80;
+				ties[i].y = 0;
+			}
+
+			if (ties[i].x > 80 && ties[i].y >= playArea_y)
+			{
+				ties[i].active = 0;
+			}
+			
+			textcolor(GRAY1, BLACK);
+			putPlayer(ties[i].x, ties[i].y, tie);
+		}
+		else
+		{
+			erasePlayer(ties[i].x, ties[i].y);
+
+			ties[i].x = 100;
+			ties[i].y = 48;
+		}
+	}
+}
+
 void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 갱신한다!!
 {
 	for (int i = 0; i < MAX_BULLETS; i++)
@@ -243,18 +328,45 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			gotoxy(bullets[i].x, bullets[i].y);
 			putchar(BLANK);
 			// 이전 위치 지우기
-			bullets[i].y--;
 
-			// 히트박스를 약간 여유롭게 하여 움직일 때 대비
-			if (bullets[i].owner == 1 && bullets[i].y >= (luke_y - 1) && bullets[i].y <= luke_y)
+			// 만약 탄환이 플레이어 ( 루크, 베이더 ) 라면 위로 상승, 타이 파이터 라면 아래로 하강
+			if (bullets[i].owner == 2)
+			{
+				bullets[i].y += 3;
+			}
+			else
+			{
+				bullets[i].y -= 2;
+			}
+
+			// 히트박스를 약간 여유롭게 하여 움직일 때 대비 ( 베이더와 타이의 공격 ) 
+			if (bullets[i].owner != 0 && bullets[i].y >= (luke_y - 1) && bullets[i].y <= luke_y)
 			{
 				if (bullets[i].x >= (luke_x - 1) && bullets[i].x <= (luke_x + 1))
 				{
 					bullets[i].active = 0;
-					luke_damage(1); // 베이더가 주는 데미지
+					luke_damage(1); // 루크가 받는 데미지
 				}
 			}
 
+			// 루크 -> 타이 공격 
+			for (int j = 0; j < MAX_TIES; j++)
+			{
+				if (!ties[j].active)
+				{
+					continue;
+				}
+
+				if (bullets[i].owner == 0 && bullets[i].y >= (ties[j].y - 2) && bullets[i].y <= ties[j].y)
+				{
+					if (bullets[i].x >= (ties[j].x - 2) && bullets[i].x <= (ties[j].x + 2))
+					{
+						bullets[i].active = 0;
+						ties[j].life -= 1;
+					}
+				}
+
+			}
 
 			if (bullets[i].owner == 1 && bullets[i].y <= 0 && bullets[i].x > 80) // 베이더의 탄환은 y 0에 도달하면 루크 쪽으로 옮기기 
 			{
@@ -262,14 +374,25 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 				bullets[i].y = playArea_y - 1;
 			}
 
-			if (bullets[i].x <= WIDTH / 2 && bullets[i].y <= 0)
+			if (bullets[i].owner == 2 && bullets[i].y >= playArea_y && bullets[i].x < 80) // 타이 파이터의 탄환은 y playAreaY에 도달하면 베이더 쪽으로 옮기기
+			{
+				bullets[i].x = bullets[i].x + 81;
+				bullets[i].y = 0;
+			}
+
+			if ((bullets[i].x < WIDTH / 2 && bullets[i].y <= 1))
 			{
 				bullets[i].active = 0; // 화면 밖으로 나가면 비활성화
 			}
 
+			if (bullets[i].owner == 2 && bullets[i].x > WIDTH/2 && bullets[i].y >= (playArea_y - 2))
+			{
+				bullets[i].active = 0;
+			}
+
 			gotoxy(bullets[i].x, bullets[i].y);
 
-			if (bullets[i].owner)
+			if (bullets[i].owner != 0)
 			{
 				textcolor(GREEN2, BLACK);
 			}
@@ -290,6 +413,9 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 
 void startgame()
 {	
+	// 점수 카운터 초기화
+	score = 0;
+
 	// 체력 초기화
 	luke_life = 10;
 	vader_life = 10;
@@ -303,8 +429,6 @@ void startgame()
 	is_vader_win = 0;
 
 	PlaySound(TEXT("yavin.wav"), NULL, SND_ASYNC | SND_LOOP);
-
-	char tie[3] = { '|', 'O', '|' };
 
 	draw_ingame_UI();
 	char xwing[3] = { '>','B', '<' };
@@ -485,7 +609,23 @@ void startgame()
 		old_x2 = new_x2;
 		old_y2 = new_y2;
 
-		Sleep(30);
+		// 적 생성
+		score++;
+
+		if (score%300 == 0)
+		{
+			spawnEnemy();
+			spawnEnemy();
+			spawnEnemy();
+			spawnEnemy();
+			spawnEnemy();
+			spawnEnemy();
+		}
+
+		// 적 갱신
+		updateEnemy();
+
+		Sleep(10);
 	}
 }
 
@@ -708,11 +848,11 @@ void playOpeningCrawl() {
 
 void mainMenu()
 {
-	printf("ESC 키를 눌러 게임 시작");
+	printf("스페이스 바를 눌러 게임 시작");
 
 	while (1)
 	{
-		if (_getch() == ESC)
+		if (_getch() == BLANK)
 		{
 			PlaySound(NULL, 0, 0); // 메인 음악 중지하기
 			system("cls");
@@ -726,8 +866,8 @@ void main()
 	srand((unsigned)time(NULL));
 
 	removeCursor();
-	//playOpeningCrawl();
-	//mainMenu();
+	playOpeningCrawl();
+	mainMenu();
 	startgame();
 	result();
 }

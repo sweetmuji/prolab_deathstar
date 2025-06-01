@@ -62,8 +62,18 @@ int luke_y;
 int vader_x;
 int vader_y;
 
+// 루크와 베이더의 체력
+int luke_life;
+int vader_life;
+int is_luke_dead; // 사망 상태 
+int is_vader_dead; 
+
+// 승리 결과
+int is_luke_win;
+int is_vader_win;
+
 // 레이저 구조체 정의
-#define MAX_BULLETS 10
+#define MAX_BULLETS 30
 
 typedef struct {
 	int owner; // 0: 루크, 1: 베이더
@@ -190,6 +200,26 @@ void shootLaser(int input)
 	}
 }
 
+void luke_damage(int damage) // 루크의 데미지, 사망 처리 
+{
+	luke_life -= damage;
+
+	if (luke_life <= 0)
+	{
+		for (int i = luke_x; i <= luke_x + 2; i++)
+		{
+			is_luke_dead = 1;
+			is_vader_win = 1; // 베이더 승리
+			putchar(BLANK); // 엑스윙 지우기
+		}
+	}
+}
+
+void vader_damage(int damage) // 베이더의 데미지, 사망 처리
+{
+
+}
+
 void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 갱신한다!!
 {
 	for (int i = 0; i < MAX_BULLETS; i++)
@@ -201,10 +231,21 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			// 이전 위치 지우기
 			bullets[i].y--;
 
+			// 히트박스를 약간 여유롭게 하여 움직일 때 대비
+			if (bullets[i].owner == 1 && bullets[i].y >= (luke_y - 1) && bullets[i].y <= luke_y)
+			{
+				if (bullets[i].x >= (luke_x - 1) && bullets[i].x <= (luke_x + 1))
+				{
+					bullets[i].active = 0;
+					luke_damage(1); // 베이더가 주는 데미지
+				}
+			}
+
+
 			if (bullets[i].owner == 1 && bullets[i].y <= 0 && bullets[i].x > 80) // 베이더의 탄환은 y 0에 도달하면 루크 쪽으로 옮기기 
 			{
 				bullets[i].x = bullets[i].x - 81;
-				bullets[i].y = playArea_y - 2;	
+				bullets[i].y = playArea_y - 1;
 			}
 
 			if (bullets[i].x <= WIDTH / 2 && bullets[i].y <= 0)
@@ -225,6 +266,18 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 
 void startgame()
 {	
+	// 체력 초기화
+	luke_life = 10;
+	vader_life = 10;
+
+	// 사망 상태 초기화
+	is_luke_dead = 0;
+	is_vader_dead = 0;
+
+	// 승리 결과 초기화
+	is_luke_win = 0;
+	is_vader_win = 0;
+
 	PlaySound(TEXT("yavin.wav"), NULL, SND_ASYNC | SND_LOOP);
 
 	char tie[3] = { '|', 'O', '|' };
@@ -264,7 +317,17 @@ void startgame()
 	int p2_before = STOP2;
 
 	while (1)
-	{
+	{	
+		if (is_luke_dead)
+		{
+			break;
+		}
+
+		if (is_vader_dead)
+		{
+			break;
+		}
+
 		if (_kbhit())
 		{
 			input = _getch();
@@ -378,7 +441,7 @@ void startgame()
 		luke_x = new_x1;
 		luke_y = new_y1;
 		vader_x = new_x2;
-		vader_y = new_y2;
+		vader_y = new_y2;		
 
 		// 루크 움직임
 		textcolor(GRAY1, BLACK);
@@ -402,11 +465,28 @@ void startgame()
 	}
 }
 
+void result() // 게임 결과 화면
+{
+	system("cls");
+
+	if (is_vader_win) // 베이더 승리 ( 루크 사망 ) 
+	{
+		gotoxy(0, 0);
+		printf("베이더 승리");
+	}
+	else if (is_luke_win) // 루크 승리 ( 베이더 사망, 완주 )
+	{
+		gotoxy(0, 0);
+		printf("루크 승리");
+	}
+
+	gotoxy(100, 30);
+}
+
 void playOpeningCrawl() {
 	char* longtime = "오래 전 멀고 먼 은하계에서는...";
 
-	char* crawl[] =
-	{
+	char* crawl[] = {
 		"                             STAR WARS: The Death Star Mission",
 		" ",
 		" ",
@@ -414,45 +494,53 @@ void playOpeningCrawl() {
 		" ",
 		" ",
 		" ",
-		"                        사악한 시스의 군주 다스 시디어스의 계략으로",
+		"                         사악한 시스의 군주 다스 시디어스의 계략으로",
 		" ",
-		"                        제다이 기사 '아나킨 스카이워커' 가 타락하고",
+		"                       제다이 기사 '아나킨 스카이워커' 가 어둠에 물들고",
 		" ",
-		"                         제다이 기사단과 은하 공화국이 몰락한 이후",
+		"                           제다이 기사단과 은하 공화국이 몰락한 이후",
 		" ",
-		"               평온했던 은하계는 다시 억압과 전쟁의 소용돌이에 휘말리게 되었다.",
+		"                  평온했던 은하계는 다시 억압과 전쟁의 소용돌이에 휘말리게 되었다.",
 		" ",
-		"              그 암흑의 시대 속에서 은하 제국의 지배에 맞서 싸우는 반란 연합은",
+		"                  그 암흑의 시대 속에서 은하 제국의 지배에 맞서 싸우는 반란 연합은",
 		" ",
-		"                    '로그원' 이라 불린 용감한 첩보원들의 희생으로",
+		"                         '카시안 안도르' 와 '진 어소' 를 주축으로 구성된",
 		" ",
-		"         제국의 기밀 정보가 저장된 스카리프 행성에서 은하 제국을 상대로 첫 승리를 거두고",
+		"                          '로그원' 이라 불린 용감한 첩보원들의 희생으로",
 		" ",
-		"             은하 제국이 비밀리에 개발 중인 행성 파괴 병기, '데스스타' 의 설계도를",
+		"            제국의 기밀 정보가 저장된 스카리프 행성에서 은하 제국을 상대로 첫 승리를 거두고",
 		" ",
-		"                            목숨을 걸고 탈취하는 데 성공했다.",
+		"                   은하 제국이 비밀리에 개발 중인 행성 파괴 병기, '데스스타' 의",
 		" ",
-		" ",
-		"                    반란 연합의 일원이자 얼데란 행성의 '레아 공주' 는",
-		" ",
-		"                     이 행성 파괴 병기의 약점을 담은 귀중한 설계도를",
-		" ",
-		"                     반란 연합의 기지인 야빈 4 행성으로 운반하기 위해",
-		" ",
-		"                 클론 전쟁의 영웅, 제다이 기사 '오비완 케노비' 의 도움으로",
-		" ",
-		"                     은하 제국의 추격을 피해 목숨을 건 탈출을 감행한다.",
+		"                            설계도를 목숨을 걸고 탈취하는 데 성공했다.",
 		" ",
 		" ",
-		"                    한편, 데스스타가 야빈 행성계를 향해 다가오는 가운데",
+		"               이 설계도에는 '진 어소' 의 아버지이자 데스스타를 설계한 과학자 '갤런 어소'가",
 		" ",
-		"             광활한 은하계의 변방, 타투인 행성의 평범한 소년 '루크 스카이워커' 는",
+		"                  제국의 감시 속에서도 남몰래 심어놓은 치명적인 약점이 담겨 있었고",
 		" ",
-		"                    '오비완 케노비' 의 도움으로 포스라는 힘에 눈을 뜨게 되고",
+		"                        반란 연합의 일원이자 얼데란 행성의 의원 '레아 공주' 는",
 		" ",
-		"                     자신도 모르게 운명처럼 이 싸움에 발을 들이게 된다.",
+		"                         '데스스타' 의 치명적 약점을 담은 이 귀중한 설계도를",
 		" ",
-		"             그리고 그와 은하계의 운명을 바꿀 거대한 여정이 그의 앞에 펼쳐지게 되는데..."
+		"                          반란 연합의 기지인 야빈 4 행성으로 운반하기 위해",
+		" ",
+		"                               밀수꾼 '한 솔로' 와 '츄바카', 그리고 ",
+		" ",
+		"                      클론 전쟁의 영웅, 제다이 기사 '오비완 케노비' 의 도움으로",
+		" ",
+		"                         은하 제국의 추격을 피해 목숨을 건 탈출을 감행한다.",
+		" ",
+		" ",
+		"          한편, '다스 베이더' 가 '데스 스타'와 함께 군대를 이끌고 야빈 행성계를 향해 다가오는 가운데",
+		" ",
+		"                 광활한 은하계의 변방, 타투인 행성의 평범한 소년 '루크 스카이워커' 는",
+		" ",
+		"                  '오비완 케노비' 의 도움으로 포스라는 신비로운 힘에 눈을 뜨게 되고",
+		" ",
+		"                        자신도 모르게 운명처럼 이 싸움에 발을 들이게 된다.",
+		" ",
+		"               그리고 그와 은하계의 운명을 바꿀 거대한 여정이 그의 앞에 펼쳐지게 되는데..."
 	};
 
 	char* logo[] =
@@ -576,13 +664,13 @@ void playOpeningCrawl() {
 			}
 		}
 
-		if (offset <= 50)
+		if (offset <= 70)
 		{
-			Sleep(600);
+			Sleep(630);
 		}
 		else
 		{
-			Sleep(200);
+			Sleep(100);
 		}
 
 		if (_kbhit() == 1)
@@ -617,4 +705,5 @@ void main()
 	//playOpeningCrawl();
 	//mainMenu();
 	startgame();
+	result();
 }

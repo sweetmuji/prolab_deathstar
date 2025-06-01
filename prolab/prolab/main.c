@@ -1,5 +1,4 @@
 ﻿#define CRT_SECURE_NO_WARNINGS
-
 #include <stdio.h>
 #include <conio.h>
 #include <Windows.h>
@@ -175,6 +174,17 @@ void shootLaser(int input)
 				bullets[i].x = vader_x; 
 				bullets[i].y = vader_y - 1;
 			}
+
+			if (bullets[i].owner == 1 && bullets[i].x < P2_x_min)
+			{
+				bullets[i].x = P2_x_min + 2;
+			}
+
+			if (bullets[i].owner == 0 && bullets[i].x > P1_x_max)
+			{
+				bullets[i].x = P1_x_max - 2;
+			}
+
 			break;
 		}
 	}
@@ -263,23 +273,19 @@ void startgame()
 			{
 			case UP:
 				new_y1 = old_y1 - 1;
-				luke_y -= 1;
 				p1_before = UP;
 				break;
 			case DOWN:
 				new_y1 = old_y1 + 1;
 				p1_before = DOWN;
-				luke_y += 1;
 				break;
 			case RIGHT:
 				new_x1 = old_x1 + 1;
 				p1_before = RIGHT;
-				luke_x += 1;
 				break;
 			case LEFT:
 				new_x1 = old_x1 - 1;
 				p1_before = LEFT;
-				luke_x -= 1;
 				break;
 			case STOP1:
 				p1_before = STOP1;
@@ -290,22 +296,18 @@ void startgame()
 			case UP2:
 				new_y2 = old_y2 - 1;
 				p2_before = UP2;
-				vader_y -= 1;
 				break;
 			case DOWN2:
 				new_y2 = old_y2 + 1;
 				p2_before = DOWN2;
-				vader_y += 1;
 				break;
 			case RIGHT2:
 				new_x2 = old_x2 + 1;
 				p2_before = RIGHT2;
-				vader_x += 1;
 				break;
 			case LEFT2:
 				new_x2 = old_x2 - 1;
 				p2_before = LEFT2;
-				vader_x -= 1;
 				break;
 			case STOP2:
 				p2_before = STOP2;
@@ -321,19 +323,15 @@ void startgame()
 			{
 			case UP:
 				new_y1 = old_y1 - 1;
-				luke_y -= 1;
 				break;
 			case DOWN:
 				new_y1 = old_y1 + 1;
-				luke_y += 1;
 				break;
 			case RIGHT:
 				new_x1 = old_x1 + 1;
-				luke_x += 1;
 				break;
 			case LEFT:
 				new_x1 = old_x1 - 1;
-				luke_x -= 1;
 				break;
 			case STOP1:
 				break;
@@ -343,19 +341,15 @@ void startgame()
 			{
 			case UP2:
 				new_y2 = old_y2 - 1;
-				vader_y -= 1;
 				break;
 			case DOWN2:
 				new_y2 = old_y2 + 1;
-				vader_y += 1;
 				break;
 			case RIGHT2:
 				new_x2 = old_x2 + 1;
-				vader_x += 1;
 				break;
 			case LEFT2:
 				new_x2 = old_x2 - 1;
-				vader_x -= 1;
 				break;
 			case STOP2:
 				break;
@@ -363,22 +357,28 @@ void startgame()
 		}
 
 		// 루크
-		if (new_x1 < P1_x_min + 1) // < 는 x - 1
+		if (new_x1 < P1_x_min + 1)
 			new_x1 = old_x1;
-		if (new_x1 > P1_x_max - 1) // > 는 x + 1   
+		if (new_x1 > P1_x_max - 1) 
 			new_x1 = old_x1;
+
 		// y 축 위치 보정
 		if (new_y1 < 0 || new_y1 > playArea_y)
 			new_y1 = old_y1;
 
 		// 베이더
-		if (new_x2 < P2_x_min + 2) // < 는 x - 1   
+		if (new_x2 < P2_x_min + 3)
 			new_x2 = old_x2;
-		if (new_x2 > P2_x_max - 1) // > 는 x + 1
+		if (new_x2 > P2_x_max - 1) 
 			new_x2 = old_x2;
 		// y 축 위치 보정
 		if (new_y2 < 0 || new_y2 > playArea_y)
 			new_y2 = old_y2;
+
+		luke_x = new_x1;
+		luke_y = new_y1;
+		vader_x = new_x2;
+		vader_y = new_y2;
 
 		// 루크 움직임
 		textcolor(GRAY1, BLACK);
@@ -398,7 +398,7 @@ void startgame()
 		old_x2 = new_x2;
 		old_y2 = new_y2;
 
-		Sleep(75);
+		Sleep(30);
 	}
 }
 

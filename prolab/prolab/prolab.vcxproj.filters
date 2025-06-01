@@ -31,5 +31,11 @@
     <Media Include="..\x64\Debug\yavin.wav">
       <Filter>리소스 파일</Filter>
     </Media>
+    <Media Include="..\x64\Debug\xwing.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
+    <Media Include="..\x64\Debug\tie.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
   </ItemGroup>
 </Project>

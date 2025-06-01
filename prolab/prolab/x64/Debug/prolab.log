@@ -1,6 +1,6 @@
 ﻿  main.c
-C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(622,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(629,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(636,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(643,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(646,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(653,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(660,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Users\wonj1\Desktop\prolab_deathstar\prolab\prolab\main.c(667,10): warning C4244: '함수': 'double'에서 'DWORD'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   prolab.vcxproj -> C:\Users\wonj1\Desktop\prolab_deathstar\prolab\x64\Debug\prolab.exe

@@ -72,10 +72,11 @@ int is_vader_dead;
 int is_luke_win;
 int is_vader_win;
 
-// 레이저 구조체 정의
+// 플레이어들이 발사하는 탄환
 #define MAX_BULLETS 30
 
-typedef struct {
+typedef struct 
+{
 	int owner; // 0: 루크, 1: 베이더
 	int x;
 	int y;
@@ -83,6 +84,19 @@ typedef struct {
 } Bullet;
 
 Bullet bullets[MAX_BULLETS];
+
+// 적 타이파이터 구조체
+#define MAX_TIES 30
+
+typedef struct
+{
+	int x;
+	int y;
+	int active;
+	int life;
+} tieFighter;
+
+tieFighter ties[MAX_TIES];
 
 void removeCursor(void) { // 커서를 안보이게 한다
 
@@ -254,6 +268,16 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			}
 
 			gotoxy(bullets[i].x, bullets[i].y);
+
+			if (bullets[i].owner)
+			{
+				textcolor(GREEN2, BLACK);
+			}
+			else
+			{
+				textcolor(RED1, BLACK);
+			}
+
 			putchar('|');
 		}
 		else
@@ -474,7 +498,7 @@ void result() // 게임 결과 화면
 		gotoxy(0, 0);
 		printf("베이더 승리");
 	}
-	else if (is_luke_win) // 루크 승리 ( 베이더 사망, 완주 )
+	else if (is_luke_win) // 루크 승리 ( 베이더 사망, 루크 완주 )
 	{
 		gotoxy(0, 0);
 		printf("루크 승리");

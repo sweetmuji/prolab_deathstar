@@ -48,7 +48,7 @@
 #define SHOOT2 'n'
 
 #define WIDTH 160
-#define HEIGHT 48
+#define HEIGHT 50
 
 #define P1_x_min 0
 #define P1_x_max 78
@@ -101,7 +101,7 @@ typedef struct
 tieFighter ties[MAX_TIES];
 
 // 점수 
-int score;
+int score; // 점수 저장 while 반복 1 회 마다 1 증가
 
 void removeCursor(void) { // 커서를 안보이게 한다
 
@@ -138,6 +138,11 @@ void putPlayer(int x, int y, char* xwing)
 	}
 }
 
+void textcolor(int fg_color, int bg_color)
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fg_color | bg_color << 4);
+}
+
 void erasePlayer(int x, int y)
 {
 	gotoxy(x - 1, y);
@@ -148,20 +153,27 @@ void erasePlayer(int x, int y)
 	}
 }
 
-
-
-void textcolor(int fg_color, int bg_color)
+void paintBG(int x, int y, int color)
 {
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fg_color | bg_color << 4);
+	for (int i = 0; i <= x; i++)
+	{
+		for (int j = 0; j <= y; j++)
+		{
+			textcolor(color, color);
+			putchar(BLANK);
+		}
+	}
 }
 
 void draw_ingame_UI()
 {
+	paintBG(WIDTH, playArea_y, GRAY1);
+
 	for (int i = P1_x_max + 1; i < P2_x_min;i++)
 	{
 		for (int j = 0; j <= playArea_y + 1; j++)
 		{
-			textcolor(GREEN1, BLACK);
+			textcolor(GRAY2, GRAY1);
 			gotoxy(i, j);
 			printf("■");
 		}
@@ -169,17 +181,73 @@ void draw_ingame_UI()
 
 	for (int i = 0; i < 159; i++)
 	{
-		textcolor(GREEN1, BLACK);
+		textcolor(GRAY2, GRAY1);
 		gotoxy(i, playArea_y + 1);
 		printf("■");
 	}
 }
 
-void dialog(int score) // 특정 점수 분기점 마다 대사 출력하기 
+erase_speech(int x, int y)
 {
+	textcolor(BLACK, BLACK);
+	printf("                                                                         ");
+	textcolor(CYAN1, BLACK);
+	gotoxy(x, y);
+}
+
+void speech(int score) // 특정 점수 분기점 마다 대사 출력하기 
+{
+	int x = 0;
+	int y = playArea_y + 5;
+	gotoxy(x, y);
+	textcolor(CYAN1, BLACK);
+
 	switch (score)
 	{
-	case 10:
+	case 50:
+		printf("레드 전대장 가벤 드레이스 : 전 대원, S - foil 공격 상태로 고정하라.");
+		break;
+	case 100:
+		erase_speech(x, y);
+		printf("레드 텐 대기 중");
+		break;
+	case 120:
+		erase_speech(x, y);
+		printf("레드 세븐 대기 중");
+		break;
+	case 130:
+		erase_speech(x, y);
+		printf("레드 식스 대기 중");
+		break;
+	case 150:
+		erase_speech(x, y);
+		printf("레드 나인 대기 중");
+		break;
+	case 170:
+		erase_speech(x, y);
+		printf("레드 투 대기 중");
+		break;
+	case 190:
+		erase_speech(x, y);
+		printf("루크 스카이워커 : 레드 파이브 대기 중");
+		break;
+	case 210:
+		erase_speech(x, y);
+		printf("웨지 안틸레스 : 정말 거대하군!");
+		break;
+	case 240:
+		erase_speech(x, y);
+		printf("루크 스카이워커 : 여기는 레드 파이브, 진입한다.");
+		break;
+	case 280:
+		erase_speech(x, y);
+		textcolor(RED1, BLACK);
+		printf("은하 제국 장교 : 총독님, 반란군 기지가 7분 후 사정권에 들어옵니다.");
+		break;
+	case 340:
+		erase_speech(x, y);
+		textcolor(RED1, BLACK);
+		printf("월허프 타킨 총독 : 준비가 되면 발사하게");
 		break;
 	}
 }
@@ -227,10 +295,11 @@ void luke_damage(int damage) // 루크의 데미지, 사망 처리
 
 	if (luke_life <= 0)
 	{
+		is_luke_dead = 1;
+		is_vader_win = 1; // 베이더 승리
+
 		for (int i = luke_x; i <= luke_x + 2; i++)
 		{
-			is_luke_dead = 1;
-			is_vader_win = 1; // 베이더 승리
 			putchar(BLANK); // 엑스윙 지우기
 		}
 	}
@@ -238,7 +307,18 @@ void luke_damage(int damage) // 루크의 데미지, 사망 처리
 
 void vader_damage(int damage) // 베이더의 데미지, 사망 처리
 {
+	vader_life -= damage;
 
+	if (vader_life <= 0)
+	{
+		is_vader_dead = 1;
+		is_luke_win = 1;
+
+		for (int i = vader_x; i <= vader_x + 2; i++)
+		{
+			putchar(BLANK); // 베이더 지우기
+		}
+	}
 }
 
 void enemyShoot(int tieNum)
@@ -266,11 +346,12 @@ void spawnEnemy()
 			ties[i].active = 1;
 			ties[i].life = 1;
 
-			// 루크 화면의 x축 랜덤하게
-			int ranX = rand() % 10 + 50;
+			// 루크 화면에서 스폰 되는 타이 파이터 x, y 랜덤
+			int ranX = rand() % 60 + 15;
+			int ranY = rand() % 3;
 
 			ties[i].x = ranX;
-			ties[i].y = 0;
+			ties[i].y = ranY;
 
 			enemyShoot(i); // 스폰 되자 마자 탄환 발사
 
@@ -285,7 +366,6 @@ void updateEnemy()
 	{
 		if (ties[i].life <= 0)
 		{
-			score += 30; // 타이 파이터 파괴 시 점수 증가하기 
 			ties[i].active = 0;
 		}
 
@@ -306,15 +386,15 @@ void updateEnemy()
 				ties[i].active = 0;
 			}
 			
-			textcolor(GRAY1, BLACK);
+			textcolor(BLACK, GRAY1);
 			putPlayer(ties[i].x, ties[i].y, tie);
 		}
 		else
 		{
 			erasePlayer(ties[i].x, ties[i].y);
 
-			ties[i].x = 100;
-			ties[i].y = 48;
+			ties[i].x = 157;
+			ties[i].y = 0;
 		}
 	}
 }
@@ -359,8 +439,9 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 
 				if (bullets[i].owner == 0 && bullets[i].y >= (ties[j].y - 2) && bullets[i].y <= ties[j].y)
 				{
-					if (bullets[i].x >= (ties[j].x - 2) && bullets[i].x <= (ties[j].x + 2))
+					if (bullets[i].x >= (ties[j].x - 2) && bullets[i].x <= (ties[j].x + 2)) // 타이 파이터 명중 이벤트
 					{
+						score += 50; // 점수 50점 증가
 						bullets[i].active = 0;
 						ties[j].life -= 1;
 					}
@@ -394,11 +475,11 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 
 			if (bullets[i].owner != 0)
 			{
-				textcolor(GREEN2, BLACK);
+				textcolor(GREEN1, GRAY1);
 			}
 			else
 			{
-				textcolor(RED1, BLACK);
+				textcolor(RED1, GRAY1);
 			}
 
 			putchar('|');
@@ -411,10 +492,25 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 	}
 }
 
+void updateUI()
+{
+	textcolor(GREEN1, BLACK);
+
+	gotoxy(0, playArea_y + 2);
+	printf("루크 체력 : %d", luke_life);
+	gotoxy(0, playArea_y + 3);
+	printf("베이더 체력 : %d", vader_life);
+	gotoxy(0, playArea_y + 4);
+	printf("현재 점수 : %d", score);
+ }
+
 void startgame()
-{	
+{
 	// 점수 카운터 초기화
 	score = 0;
+
+	// 대사 분기점
+	int speechScore = 0;
 
 	// 체력 초기화
 	luke_life = 10;
@@ -455,9 +551,9 @@ void startgame()
 	vader_y = 30;
 
 	// 그리기 
-	textcolor(GRAY1, BLACK);
+	textcolor(BLACK, GRAY1);
 	putPlayer(new_x1, new_y1, xwing);
-	textcolor(GRAY2, BLACK);
+	textcolor(BLACK, GRAY1);
 	putPlayer(new_x2, new_y2, vader);
 
 	// 이전 키 입력을 저장
@@ -592,12 +688,12 @@ void startgame()
 		vader_y = new_y2;		
 
 		// 루크 움직임
-		textcolor(GRAY1, BLACK);
+		textcolor(BLACK, GRAY1);
 		erasePlayer(old_x1, old_y1);
 		putPlayer(new_x1, new_y1, xwing);
 
 		// 베이더 움직임
-		textcolor(GRAY2, BLACK);
+		textcolor(BLACK, GRAY1);
 		erasePlayer(old_x2, old_y2);
 		putPlayer(new_x2, new_y2, vader);
 
@@ -609,10 +705,10 @@ void startgame()
 		old_x2 = new_x2;
 		old_y2 = new_y2;
 
-		// 적 생성
+		// 점수 누적
 		score++;
 
-		if (score%300 == 0)
+		if (score%100 == 0)
 		{
 			spawnEnemy();
 			spawnEnemy();
@@ -625,7 +721,14 @@ void startgame()
 		// 적 갱신
 		updateEnemy();
 
-		Sleep(10);
+		// UI 업데이트 
+		updateUI();
+
+		// 대사 업데이트
+		speechScore++;
+		speech(speechScore);
+
+		Sleep(15);
 	}
 }
 
@@ -783,28 +886,28 @@ void playOpeningCrawl() {
 		for (int y = top; y <= bottom; y++) {
 			gotoxy(left, y);
 			putchar(' ');
-			Sleep(0.3);
+			Sleep(0.6);
 		}
 		left++;
 		
 		for (int x = left; x <= right; x++) {
 			gotoxy(x, bottom);
 			putchar(' ');
-			Sleep(0.3);
+			Sleep(0.6);
 		}
 		bottom--;
 
 		for (int y = bottom; y >= top; y--) {
 			gotoxy(right, y);
 			putchar(' ');
-			Sleep(0.3);
+			Sleep(0.6);
 		}
 		right--;
 
 		for (int x = right; x >= left; x--) {
 			gotoxy(x, top);
 			putchar(' ');
-			Sleep(0.3);
+			Sleep(0.6);
 		}
 		top++;
 	}
@@ -866,8 +969,8 @@ void main()
 	srand((unsigned)time(NULL));
 
 	removeCursor();
-	playOpeningCrawl();
-	mainMenu();
+	//playOpeningCrawl();
+	//mainMenu();
 	startgame();
 	result();
 }

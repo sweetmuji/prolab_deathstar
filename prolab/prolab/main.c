@@ -1,12 +1,20 @@
 ﻿#define CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#include <string.h>
 #include <conio.h>
 #include <Windows.h>
 #include <time.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include<mmsystem.h>
 #pragma comment(lib, "winmm.lib")
+
+// 오디오 파일 절대 경로 ( 다른 컴퓨터에서 빌드할 시 디버그 폴더만 로컬 경로로 바꾸면 됨!!! )
+#define SOUND_DIR "C:\\Users\\wonj1\\Desktop\\prolab_deathstar\\prolab\\x64\\Debug"
+
+#define xwingsound SOUND_DIR "\\xwing.wav"
+#define tiesound   SOUND_DIR "\\tie.wav"
+#define r2sound  SOUND_DIR "\\r2d2.wav"
+#define standbysound  SOUND_DIR "\\standby.wav"
 
 // 색상 정의
 #define BLACK	0
@@ -143,6 +151,36 @@ void textcolor(int fg_color, int bg_color)
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fg_color | bg_color << 4);
 }
 
+void playEffect(const char* path)
+{
+	char command[256];
+	static int count = 0;
+
+	MCIERROR err;
+
+	// open 명령
+	sprintf(command, "open \"%s\" alias effect%d", path, count);
+	err = mciSendString(command, NULL, 0, NULL);
+	if (err != 0) {
+		char errMsg[128];
+		mciGetErrorString(err, errMsg, sizeof(errMsg));
+		MessageBox(NULL, errMsg, "MCI Open Error", MB_OK);
+		return;
+	}
+
+	// play 명령
+	sprintf(command, "play effect%d from 0", count);
+	err = mciSendString(command, NULL, 0, NULL);
+	if (err != 0) {
+		char errMsg[128];
+		mciGetErrorString(err, errMsg, sizeof(errMsg));
+		MessageBox(NULL, errMsg, "MCI Play Error", MB_OK);
+		return;
+	}
+
+	count++;
+}
+
 void erasePlayer(int x, int y)
 {
 	gotoxy(x - 1, y);
@@ -205,46 +243,52 @@ void speech(int score) // 특정 점수 분기점 마다 대사 출력하기
 	switch (score)
 	{
 	case 50:
+		playEffect(standbysound);
 		printf("레드 전대장 가벤 드레이스 : 전 대원, S - foil 공격 상태로 고정하라.");
 		break;
-	case 100:
+	case 80:
 		erase_speech(x, y);
 		printf("레드 텐 대기 중");
 		break;
-	case 120:
+	case 110:
 		erase_speech(x, y);
 		printf("레드 세븐 대기 중");
 		break;
-	case 130:
+	case 140:
 		erase_speech(x, y);
 		printf("레드 식스 대기 중");
 		break;
-	case 150:
+	case 170:
 		erase_speech(x, y);
 		printf("레드 나인 대기 중");
 		break;
-	case 170:
+	case 200:
 		erase_speech(x, y);
 		printf("레드 투 대기 중");
 		break;
-	case 190:
+	case 230:
 		erase_speech(x, y);
 		printf("루크 스카이워커 : 레드 파이브 대기 중");
 		break;
-	case 210:
+	case 250:
+		erase_speech(x, y);
+		playEffect(r2sound);
+		printf("R2D2 : 삐비비빅");
+		break;
+	case 270:
 		erase_speech(x, y);
 		printf("웨지 안틸레스 : 정말 거대하군!");
 		break;
-	case 240:
+	case 300:
 		erase_speech(x, y);
 		printf("루크 스카이워커 : 여기는 레드 파이브, 진입한다.");
 		break;
-	case 280:
+	case 330:
 		erase_speech(x, y);
 		textcolor(RED1, BLACK);
 		printf("은하 제국 장교 : 총독님, 반란군 기지가 7분 후 사정권에 들어옵니다.");
 		break;
-	case 340:
+	case 360:
 		erase_speech(x, y);
 		textcolor(RED1, BLACK);
 		printf("월허프 타킨 총독 : 준비가 되면 발사하게");
@@ -261,6 +305,7 @@ void shootLaser(int input)
 		{
 			if (input == SHOOT1)
 			{
+				playEffect(xwingsound);
 				bullets[i].owner = 0; // 루크
 				bullets[i].active = 1;
 				bullets[i].x = luke_x;  
@@ -268,6 +313,7 @@ void shootLaser(int input)
 			}
 			else if (input == SHOOT2)
 			{
+				playEffect(tiesound);
 				bullets[i].owner = 1; // 베이더
 				bullets[i].active = 1;
 				bullets[i].x = vader_x; 
@@ -323,16 +369,31 @@ void vader_damage(int damage) // 베이더의 데미지, 사망 처리
 
 void enemyShoot(int tieNum)
 {
-	for (int i = 0; i < MAX_BULLETS; i++)
+	int i;
+	for (i = 0; i < MAX_BULLETS; i++)
 	{
 		if (!bullets[i].active)
 		{
-			bullets[i].x = ties[tieNum].x;
+			playEffect(tiesound);
+			bullets[i].x = ties[tieNum].x - 1; // 왼쪽 탄환
 			bullets[i].y = ties[tieNum].y + 3;
 			bullets[i].owner = 2; // 타이 파이터가 주인
 			bullets[i].active = 1;
 
-			break; // 한 발 발사하면 종료
+			break; // 다음 탄환 찾기
+		}
+	}
+
+	for (int j = i + 1; j < MAX_BULLETS; j++)
+	{
+		if (!bullets[j].active)
+		{
+			bullets[j].x = ties[tieNum].x + 1; // 오른쪽 탄환
+			bullets[j].y = ties[tieNum].y + 3;
+			bullets[j].owner = 2; // 타이 파이터가 주인
+			bullets[j].active = 1;
+
+			break;
 		}
 	}
 }
@@ -714,8 +775,6 @@ void startgame()
 			spawnEnemy();
 			spawnEnemy();
 			spawnEnemy();
-			spawnEnemy();
-			spawnEnemy();
 		}
 
 		// 적 갱신
@@ -728,7 +787,7 @@ void startgame()
 		speechScore++;
 		speech(speechScore);
 
-		Sleep(15);
+		Sleep(10);
 	}
 }
 

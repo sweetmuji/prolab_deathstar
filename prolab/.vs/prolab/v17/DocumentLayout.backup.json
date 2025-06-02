@@ -43,9 +43,10 @@
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
               "ToolTip": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
               "RelativeToolTip": "..\\..\\..\\..\\..\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
-              "ViewState": "AgIAAHUCAAAAAAAAAAAMwIUCAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAALgFAAAAAAAAAAAtwNcFAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-05-31T14:01:44.68Z"
+              "WhenOpened": "2025-05-31T14:01:44.68Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -55,7 +56,7 @@
               "RelativeDocumentMoniker": "prolab\\main.c",
               "ToolTip": "C:\\Users\\wonj1\\Desktop\\prolab_deathstar\\prolab\\prolab\\main.c",
               "RelativeToolTip": "prolab\\main.c",
-              "ViewState": "AgIAANIAAAAAAAAAAAAAAPkAAAAhAAAAAAAAAA==",
+              "ViewState": "AgIAAGoBAAAAAAAAAAAAAIIBAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
               "WhenOpened": "2025-05-31T12:52:24.859Z",
               "EditorCaption": ""

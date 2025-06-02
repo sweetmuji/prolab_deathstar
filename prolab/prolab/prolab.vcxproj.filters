@@ -37,5 +37,11 @@
     <Media Include="..\x64\Debug\tie.wav">
       <Filter>리소스 파일</Filter>
     </Media>
+    <Media Include="..\x64\Debug\r2d2.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
+    <Media Include="..\x64\Debug\standby.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
   </ItemGroup>
 </Project>

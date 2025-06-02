@@ -100,7 +100,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -130,6 +130,8 @@
   </ItemGroup>
   <ItemGroup>
     <Media Include="..\x64\Debug\maintheme.wav" />
+    <Media Include="..\x64\Debug\r2d2.wav" />
+    <Media Include="..\x64\Debug\standby.wav" />
     <Media Include="..\x64\Debug\tie.wav" />
     <Media Include="..\x64\Debug\xwing.wav" />
     <Media Include="..\x64\Debug\yavin.wav" />

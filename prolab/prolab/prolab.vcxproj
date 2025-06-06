@@ -129,8 +129,12 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <Media Include="..\x64\Debug\explode.wav" />
     <Media Include="..\x64\Debug\maintheme.wav" />
     <Media Include="..\x64\Debug\r2d2.wav" />
+    <Media Include="..\x64\Debug\r2d21.wav" />
+    <Media Include="..\x64\Debug\saberon.wav" />
+    <Media Include="..\x64\Debug\scream.wav" />
     <Media Include="..\x64\Debug\standby.wav" />
     <Media Include="..\x64\Debug\tie.wav" />
     <Media Include="..\x64\Debug\xwing.wav" />

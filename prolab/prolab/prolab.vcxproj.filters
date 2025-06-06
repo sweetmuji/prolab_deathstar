@@ -43,5 +43,17 @@
     <Media Include="..\x64\Debug\standby.wav">
       <Filter>리소스 파일</Filter>
     </Media>
+    <Media Include="..\x64\Debug\explode.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
+    <Media Include="..\x64\Debug\scream.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
+    <Media Include="..\x64\Debug\r2d21.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
+    <Media Include="..\x64\Debug\saberon.wav">
+      <Filter>리소스 파일</Filter>
+    </Media>
   </ItemGroup>
 </Project>

@@ -8,13 +8,17 @@
 #include<mmsystem.h>
 #pragma comment(lib, "winmm.lib")
 
-// 오디오 파일 절대 경로 ( 다른 컴퓨터에서 빌드할 시 디버그 폴더만 로컬 경로로 바꾸면 됨!!! )
+// 오디오 파일 절대 경로 ( 다른 컴퓨터에서 빌드할 시 디버그 폴더만 로컬 절대 경로로 바꾸면 됨!!! )
 #define SOUND_DIR "C:\\Users\\wonj1\\Desktop\\prolab_deathstar\\prolab\\x64\\Debug"
 
 #define xwingsound SOUND_DIR "\\xwing.wav"
 #define tiesound   SOUND_DIR "\\tie.wav"
 #define r2sound  SOUND_DIR "\\r2d2.wav"
 #define standbysound  SOUND_DIR "\\standby.wav"
+#define explodesound  SOUND_DIR "\\explode.wav"
+#define scream  SOUND_DIR "\\scream.wav"
+#define saberonsound  SOUND_DIR "\\saberon.wav"
+#define r2sound1  SOUND_DIR "\\r2d21.wav"
 
 // 색상 정의
 #define BLACK	0
@@ -54,6 +58,8 @@
 #define RIGHT2 0x4d
 #define STOP2 'm'
 #define SHOOT2 'n'
+
+#define SPACE 32
 
 #define WIDTH 160
 #define HEIGHT 50
@@ -266,20 +272,24 @@ void speech(int score) // 특정 점수 분기점 마다 대사 출력하기
 		erase_speech(x, y);
 		printf("레드 투 대기 중");
 		break;
-	case 230:
+	case 220:
+		erase_speech(x, y);
+		printf("레드 일레븐 대기 중");
+		break;
+	case 250:
 		erase_speech(x, y);
 		printf("루크 스카이워커 : 레드 파이브 대기 중");
 		break;
-	case 250:
+	case 270:
 		erase_speech(x, y);
 		playEffect(r2sound);
 		printf("R2D2 : 삐비비빅");
 		break;
-	case 270:
+	case 290:
 		erase_speech(x, y);
 		printf("웨지 안틸레스 : 정말 거대하군!");
 		break;
-	case 300:
+	case 310:
 		erase_speech(x, y);
 		printf("루크 스카이워커 : 여기는 레드 파이브, 진입한다.");
 		break;
@@ -470,7 +480,7 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			putchar(BLANK);
 			// 이전 위치 지우기
 
-			// 만약 탄환이 플레이어 ( 루크, 베이더 ) 라면 위로 상승, 타이 파이터 라면 아래로 하강
+		// 만약 탄환이 플레이어 ( 루크, 베이더 ) 라면 위로 상승, 타이 파이터 라면 아래로 하강
 			if (bullets[i].owner == 2)
 			{
 				bullets[i].y += 3;
@@ -502,34 +512,23 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 				{
 					if (bullets[i].x >= (ties[j].x - 2) && bullets[i].x <= (ties[j].x + 2)) // 타이 파이터 명중 이벤트
 					{
+						int ran = rand() % 4;
+
+						if (ran == 1)
+						{
+							playEffect(scream);
+						}
+						else
+						{
+							playEffect(explodesound);
+						}
+
 						score += 50; // 점수 50점 증가
 						bullets[i].active = 0;
 						ties[j].life -= 1;
 					}
 				}
 
-			}
-
-			if (bullets[i].owner == 1 && bullets[i].y <= 0 && bullets[i].x > 80) // 베이더의 탄환은 y 0에 도달하면 루크 쪽으로 옮기기 
-			{
-				bullets[i].x = bullets[i].x - 81;
-				bullets[i].y = playArea_y - 1;
-			}
-
-			if (bullets[i].owner == 2 && bullets[i].y >= playArea_y && bullets[i].x < 80) // 타이 파이터의 탄환은 y playAreaY에 도달하면 베이더 쪽으로 옮기기
-			{
-				bullets[i].x = bullets[i].x + 81;
-				bullets[i].y = 0;
-			}
-
-			if ((bullets[i].x < WIDTH / 2 && bullets[i].y <= 1))
-			{
-				bullets[i].active = 0; // 화면 밖으로 나가면 비활성화
-			}
-
-			if (bullets[i].owner == 2 && bullets[i].x > WIDTH/2 && bullets[i].y >= (playArea_y - 2))
-			{
-				bullets[i].active = 0;
 			}
 
 			gotoxy(bullets[i].x, bullets[i].y);
@@ -544,11 +543,45 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			}
 
 			putchar('|');
+
+			if (bullets[i].owner == 1 && bullets[i].y <= 0 && bullets[i].x > 80) // 베이더의 탄환은 y 0에 도달하면 루크 쪽으로 옮기기 
+			{
+				gotoxy(bullets[i].x, 1);
+				printf("  ");
+
+				bullets[i].x = bullets[i].x - 81;
+				bullets[i].y = playArea_y - 1;
+			}
+
+			if (bullets[i].owner == 2 && bullets[i].y >= playArea_y - 2 && bullets[i].x < 80) // 타이 파이터의 탄환은 y playAreaY - 25에 도달하면 베이더 쪽으로 옮기기
+			{
+				gotoxy(bullets[i].x, bullets[i].y);
+				putchar(BLANK);
+
+				bullets[i].x = bullets[i].x + 81;
+				bullets[i].y = 0;
+			}
+
+			if ((bullets[i].x < WIDTH / 2 && bullets[i].y <= 1))
+			{
+				bullets[i].active = 0; // 화면 밖으로 나가면 비활성화
+			}
+
+			if (bullets[i].owner == 2 && bullets[i].x > WIDTH / 2 && bullets[i].y >= (playArea_y - 2))
+			{
+				bullets[i].active = 0;
+			}
+
+			if (!bullets[i].active)
+			{
+				gotoxy(bullets[i].x, bullets[i].y);
+				putchar(BLANK);
+			}
 		}
 		else
 		{
 			gotoxy(bullets[i].x, bullets[i].y);
-			putchar(BLANK);	
+			putchar(BLANK);
 		}
 	}
 }
@@ -558,11 +591,11 @@ void updateUI()
 	textcolor(GREEN1, BLACK);
 
 	gotoxy(0, playArea_y + 2);
-	printf("루크 체력 : %d", luke_life);
+	printf("루크 체력 : %2d", luke_life);
 	gotoxy(0, playArea_y + 3);
-	printf("베이더 체력 : %d", vader_life);
+	printf("베이더 체력 : %2d", vader_life);
 	gotoxy(0, playArea_y + 4);
-	printf("현재 점수 : %d", score);
+	printf("현재 점수 : %d ", score);
  }
 
 void startgame()
@@ -574,8 +607,8 @@ void startgame()
 	int speechScore = 0;
 
 	// 체력 초기화
-	luke_life = 10;
-	vader_life = 10;
+	luke_life = 15;
+	vader_life = 15;
 
 	// 사망 상태 초기화
 	is_luke_dead = 0;
@@ -731,7 +764,7 @@ void startgame()
 			new_x1 = old_x1;
 
 		// y 축 위치 보정
-		if (new_y1 < 0 || new_y1 > playArea_y)
+		if (new_y1 < 0 || new_y1 > playArea_y - 2)
 			new_y1 = old_y1;
 
 		// 베이더
@@ -740,7 +773,7 @@ void startgame()
 		if (new_x2 > P2_x_max - 1) 
 			new_x2 = old_x2;
 		// y 축 위치 보정
-		if (new_y2 < 0 || new_y2 > playArea_y)
+		if (new_y2 < 0 || new_y2 > playArea_y - 2)
 			new_y2 = old_y2;
 
 		luke_x = new_x1;
@@ -787,7 +820,7 @@ void startgame()
 		speechScore++;
 		speech(speechScore);
 
-		Sleep(10);
+		Sleep(30);
 	}
 }
 
@@ -927,6 +960,20 @@ void playOpeningCrawl() {
 
 	PlaySound(TEXT("maintheme.wav"), NULL, SND_ASYNC | SND_LOOP);
 
+	for (int i = 0; i < WIDTH - 1; i++)
+	{
+		for (int j = 0; j < HEIGHT - 1; j++)
+		{
+			int rannum = rand() % 100;
+
+			if (rannum == 1)
+			{
+				gotoxy(i, j);
+				printf("*");
+			}
+		}
+	}
+
 	for (int i = 0; i < 38; i++)
 	{
 		gotoxy(28, 4 + i);
@@ -945,28 +992,28 @@ void playOpeningCrawl() {
 		for (int y = top; y <= bottom; y++) {
 			gotoxy(left, y);
 			putchar(' ');
-			Sleep(0.6);
+			Sleep(0.9);
 		}
 		left++;
 		
 		for (int x = left; x <= right; x++) {
 			gotoxy(x, bottom);
 			putchar(' ');
-			Sleep(0.6);
+			Sleep(0.9);
 		}
 		bottom--;
 
 		for (int y = bottom; y >= top; y--) {
 			gotoxy(right, y);
 			putchar(' ');
-			Sleep(0.6);
+			Sleep(0.9);
 		}
 		right--;
 
 		for (int x = right; x >= left; x--) {
 			gotoxy(x, top);
 			putchar(' ');
-			Sleep(0.6);
+			Sleep(0.9);
 		}
 		top++;
 	}
@@ -980,6 +1027,21 @@ void playOpeningCrawl() {
 
 	for (int offset = 0; offset < totalScroll; offset++) {
 		system("cls");
+
+		for (int i = 0; i < WIDTH - 1; i++)
+		{
+			for (int j = 0; j < HEIGHT - 1; j++)
+			{
+				int rannum = rand() % 100;
+
+				if (rannum == 1)
+				{
+					gotoxy(i, j);
+					printf("*");
+				}
+			}
+		}
+
 		textcolor(YELLOW1, BLACK);
 
 		for (i = 0; i < crawlLine; i++) {
@@ -1008,18 +1070,185 @@ void playOpeningCrawl() {
 	system("cls");
 }
 
+void howTo()
+{
+	system("cls");
+
+	int padding = 20;
+	while (1)
+	{
+		textcolor(YELLOW1, BLACK);
+
+		system("cls");
+
+		for (int i = 0; i < WIDTH - 1; i++)
+		{
+			for (int j = 0; j < HEIGHT - 1; j++)
+			{
+				int rannum = rand() % 100;
+
+				if (rannum == 1)
+				{
+					gotoxy(i, j);
+					printf("*");
+				}
+			}
+		}
+
+		textcolor(YELLOW1, BLACK);
+		gotoxy(padding, 3);
+		printf("스타워즈 : 데스스타 미션");
+		textcolor(CYAN1, BLACK);
+		gotoxy(padding, 5);
+		printf("> 두 명의 플레이어가 서로 경쟁하는 슈팅 게임입니다.");
+		gotoxy(padding, 7);
+		textcolor(GRAY1, BLACK);
+		printf(">B<");
+		textcolor(RED1, BLACK);
+		printf(" - - - - - -");
+		gotoxy(padding, 9);
+		textcolor(CYAN1, BLACK);
+		printf("> 플레이어 1 ( 루크 스카이워커 ) : WASD 로 이동합니다. V 키를 이용하여 공격, C 키를 이용하여 제자리에 멈춥니다.");
+		gotoxy(padding, 11);
+		textcolor(GRAY1, BLACK);
+		printf("<O>");
+		textcolor(GREEN1, BLACK);
+		printf(" - - - - - -");
+		gotoxy(padding, 13);
+		textcolor(CYAN1, BLACK);
+		printf("> 플레이어 2 ( 다스 베이더 ) : 방향키로 이동합니다. N 키를 이용하여 공격, M 키를 이용하여 제자리에 멈춥니다.");
+		gotoxy(padding, 15);
+		textcolor(GRAY1, BLACK);
+		printf("|O|");
+		textcolor(GREEN1, BLACK);
+		printf(" - - - - - -");
+		gotoxy(padding, 17);
+		textcolor(CYAN1, BLACK);
+		printf("> 적 ( 타이 파이터 ) : 일정 확률로 루크 스카이워커 앞에 나타납니다. 루크 스카이워커에게 공격을 발사합니다.");
+		gotoxy(padding, 19);
+		textcolor(GRAY1, BLACK);
+		printf("게임 종료 조건");
+		textcolor(CYAN1, BLACK);
+		gotoxy(padding, 21);
+		printf("> 플레이어 1 게임 승리 조건 : 루크 스카이워커는 최대한 오래 살아남아 점수에 도달한 경우 승리로 간주됩니다.");
+		gotoxy(padding, 23);
+		printf("> 플레이어 2 게임 승리 조건 : 다스 베이더는 공격을 발사하여 제한 시간 내에 루크 스카이워커를 처치한 경우 승리로 간주됩니다.");
+
+		gotoxy( WIDTH - 50, HEIGHT - 5);
+		printf("아무 키나 눌러 메뉴로 돌아갑니다.");
+
+		if (_kbhit())
+		{
+			playEffect(r2sound1);
+			break; // 아무 키나 눌러서 나가기
+		}
+
+		Sleep(150);
+	}
+}
+
+
 void mainMenu()
 {
-	printf("스페이스 바를 눌러 게임 시작");
+	int isSelected = 0; // 메뉴 선택 ( 0이면 게임 방법, 1 이면 게임 시작 )
+	int padding = 30;
 
 	while (1)
 	{
-		if (_getch() == BLANK)
+		system("cls");
+
+		textcolor(YELLOW1, BLACK);
+		for (int i = 0; i < WIDTH - 1; i++)
 		{
-			PlaySound(NULL, 0, 0); // 메인 음악 중지하기
-			system("cls");
+			for (int j = 0; j < HEIGHT - 1; j++)
+			{
+				int rannum = rand() % 100;
+
+				if (rannum == 1)
+				{
+					gotoxy(i, j);
+					printf("*");
+				}
+			}
+		}
+
+		textcolor(CYAN1, BLACK);
+
+		gotoxy(140, 47);
+		printf("컴공 2491111 원진우");
+		gotoxy(120, 48);
+		printf("inspired by \"STAR WARS\" by George Lucas");
+
+		gotoxy(padding, 10);
+		printf("스타워즈 : 데스스타 미션");
+
+		gotoxy(padding, 15);
+		printf("게임 방법");
+		gotoxy(padding, 20);
+		printf("게임 시작");
+		gotoxy(padding, 40);
+		printf("위/아래 방향 키로 이동, 스페이스 바로 선택");
+
+		if (isSelected)
+		{
+			gotoxy(padding - 2, 15);
+			putchar(BLANK);
+			gotoxy(padding - 2, 20);
+			printf(">");
+		}
+		else
+		{
+			gotoxy(padding - 2, 15);
+			printf(">");
+			gotoxy(padding - 2, 20);
+			putchar(BLANK);
+		}
+
+		int input = 0;
+		if (_kbhit())
+		{
+			input = _getch();
+		}
+
+		switch (input)
+		{
+		case UP2:
+			if (isSelected)
+			{
+				playEffect(r2sound);
+				isSelected = 0;
+			}
+
+			break;
+
+		case DOWN2:
+			if (!isSelected)
+			{
+				playEffect(r2sound);
+				isSelected = 1;
+			}
+			
+			break;
+		default:
 			break;
 		}
+
+		if (input == SPACE)
+		{
+			if (isSelected)
+			{
+				playEffect(saberonsound);
+				system("cls");
+				break;
+			}
+			else
+			{
+				playEffect(r2sound1);
+				howTo();
+			}
+		}
+
+		Sleep(300);
 	}
 }
 
@@ -1028,8 +1257,8 @@ void main()
 	srand((unsigned)time(NULL));
 
 	removeCursor();
-	//playOpeningCrawl();
-	//mainMenu();
+	playOpeningCrawl();
+	mainMenu();
 	startgame();
 	result();
 }

@@ -15,10 +15,16 @@
 #define tiesound   SOUND_DIR "\\tie.wav"
 #define r2sound  SOUND_DIR "\\r2d2.wav"
 #define standbysound  SOUND_DIR "\\standby.wav"
-#define explodesound  SOUND_DIR "\\explode.wav"
+#define explodesound  SOUND_DIR "\\explode.mp3"
 #define scream  SOUND_DIR "\\scream.wav"
 #define saberonsound  SOUND_DIR "\\saberon.wav"
 #define r2sound1  SOUND_DIR "\\r2d21.wav"
+#define forcestrong SOUND_DIR "\\forcestrong1.wav"
+#define imperialtheme SOUND_DIR "\\imperialtheme.wav"
+#define tiesound1 SOUND_DIR "\\tieflyby.mp3"
+#define endtheme SOUND_DIR "\\endcredits.wav"
+#define usetheforce SOUND_DIR "\\usetheforce1.wav"
+
 
 // 색상 정의
 #define BLACK	0
@@ -68,7 +74,7 @@
 #define P1_x_max 78
 #define P2_x_min 81
 #define P2_x_max 159
-#define playArea_y 35
+#define playArea_y 40
 
 // 루크와 베이더의 좌표 정리
 int luke_x;
@@ -83,11 +89,12 @@ int is_luke_dead; // 사망 상태
 int is_vader_dead; 
 
 // 승리 결과
+#define LUKE_WIN_SCORE 5000 // 승리 조건 점수
 int is_luke_win;
 int is_vader_win;
 
 // 플레이어들이 발사하는 탄환
-#define MAX_BULLETS 30
+#define MAX_BULLETS 100
 
 typedef struct 
 {
@@ -113,6 +120,31 @@ typedef struct
 } tieFighter;
 
 tieFighter ties[MAX_TIES];
+
+// 체력 회복 아이템
+#define MAX_ITEMS 30
+
+typedef struct
+{
+	int x;
+	int y;
+	int active;
+	int heal;
+} Item;
+
+Item items[MAX_ITEMS];
+
+// 적 생성 아이템 
+#define MAX_ITEMS_1 30
+
+typedef struct
+{
+	int x;
+	int y;
+	int active;
+} Item2;
+
+Item2 item2s[MAX_ITEMS_1];
 
 // 점수 
 int score; // 점수 저장 while 반복 1 회 마다 1 증가
@@ -187,6 +219,16 @@ void playEffect(const char* path)
 	count++;
 }
 
+void stopAllEffects()
+{
+	char command[64];
+	for (int i = 0; i < 100; ++i) // 최대 100개까지만 시도
+	{
+		sprintf(command, "close effect%d", i);
+		mciSendString(command, NULL, 0, NULL);
+	}
+}
+
 void erasePlayer(int x, int y)
 {
 	gotoxy(x - 1, y);
@@ -241,8 +283,8 @@ erase_speech(int x, int y)
 
 void speech(int score) // 특정 점수 분기점 마다 대사 출력하기 
 {
-	int x = 0;
-	int y = playArea_y + 5;
+	int x = 1;
+	int y = playArea_y + 7;
 	gotoxy(x, y);
 	textcolor(CYAN1, BLACK);
 
@@ -303,6 +345,19 @@ void speech(int score) // 특정 점수 분기점 마다 대사 출력하기
 		textcolor(RED1, BLACK);
 		printf("월허프 타킨 총독 : 준비가 되면 발사하게");
 		break;
+	case 500:
+		erase_speech(x, y);
+		printf("다스 베이더 : 이 자에게는 강한 포스가 느껴지는군");
+		playEffect(forcestrong);
+		break;
+	case 1300:
+		erase_speech(x, y);
+		PlaySound(NULL, NULL, SND_ASYNC); // 모든 사운드 재생 중지
+		printf("오비완 케노비 : 포스를 사용하거라 루크");
+		playEffect(usetheforce);
+	case 1800:
+		erase_speech(x, y);
+		PlaySound(TEXT("ending1.wav"), NULL, SND_ASYNC);
 	}
 }
 
@@ -348,6 +403,11 @@ void shootLaser(int input)
 void luke_damage(int damage) // 루크의 데미지, 사망 처리 
 {
 	luke_life -= damage;
+
+	if (luke_life > 30)
+	{
+		luke_life = 30; // 체력은 30이 최대
+	}
 
 	if (luke_life <= 0)
 	{
@@ -408,7 +468,7 @@ void enemyShoot(int tieNum)
 	}
 }
 
-void spawnEnemy()
+void spawnEnemy(int x, int y)
 {
 	for (int i = 0; i < MAX_TIES; i++)
 	{
@@ -419,10 +479,18 @@ void spawnEnemy()
 
 			// 루크 화면에서 스폰 되는 타이 파이터 x, y 랜덤
 			int ranX = rand() % 60 + 15;
-			int ranY = rand() % 3;
+			int ranY = rand() % 5;
 
-			ties[i].x = ranX;
-			ties[i].y = ranY;
+			if (x == 0 && y == 0) // 0, 0 으로 호출하면 랜덤위치에 생성
+			{
+				ties[i].x = ranX;
+				ties[i].y = ranY;
+			}
+			else
+			{
+				ties[i].x = x;
+				ties[i].y = y;
+			}
 
 			enemyShoot(i); // 스폰 되자 마자 탄환 발사
 
@@ -491,10 +559,11 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 			}
 
 			// 히트박스를 약간 여유롭게 하여 움직일 때 대비 ( 베이더와 타이의 공격 ) 
-			if (bullets[i].owner != 0 && bullets[i].y >= (luke_y - 1) && bullets[i].y <= luke_y)
+			if (bullets[i].owner != 0 && bullets[i].y >= (luke_y - 2) && bullets[i].y <= (luke_y + 2))
 			{
-				if (bullets[i].x >= (luke_x - 1) && bullets[i].x <= (luke_x + 1))
+				if (bullets[i].x >= (luke_x - 2) && bullets[i].x <= (luke_x + 2))
 				{
+					playEffect(explodesound);
 					bullets[i].active = 0;
 					luke_damage(1); // 루크가 받는 데미지
 				}
@@ -586,16 +655,234 @@ void updateBullets() // 탄환들을 모아둔 배열을 순회하여 상태를 
 	}
 }
 
+void spawnItem()
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (!items[i].active)
+		{
+			items[i].active = 1;
+			items[i].heal = 2; // 2만큼 치유되게
+
+			// 루크 화면에서 아이템 x, y 랜덤
+			int ranX = rand() % 60 + 15;
+			int ranY = rand() % 3 + 1;
+
+			items[i].x = ranX;
+			items[i].y = ranY;
+
+			break; // 아이템을 하나 스폰했으면 종료
+		}
+	}
+}
+
+void updateItem()
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (items[i].active)
+		{
+			gotoxy(items[i].x, items[i].y);
+			putchar(BLANK);
+			// 이전 위치 지우기
+
+			items[i].y += 2;
+
+			// 히트박스를 약간 여유롭게 하여 움직일 때 대비 ( 회복 아이템 ) 
+			if (items[i].y >= (luke_y - 2) && items[i].y <= (luke_y + 2))
+			{
+				if (items[i].x >= (luke_x - 2) && items[i].x <= (luke_x + 2))
+				{
+					playEffect(r2sound);
+					items[i].active = 0;
+					luke_damage(-items[i].heal); // 루크가 받는 힐량
+				}
+			}
+
+			gotoxy(items[i].x, items[i].y);
+			textcolor(CYAN1, GRAY1);
+			printf("@");
+
+			if ((items[i].y <= 0))
+			{
+				items[i].active = 0; // 화면 밖으로 나가면 비활성화
+			}
+
+			if (items[i].y > playArea_y - 2)
+			{
+				items[i].active = 0;
+			}
+		}
+		else
+		{
+			gotoxy(items[i].x, items[i].y);
+			putchar(BLANK);
+		}
+	}
+}
+
+void spawnItem2() // 베이더 화면에서 아이템
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (!item2s[i].active)
+		{
+			item2s[i].active = 1;
+
+			// 베이더 화면에서 아이템 x, y 랜덤
+			int ranX = rand() % 60 + 90;
+			int ranY = rand() % 3 + 1;
+
+			item2s[i].x = ranX;
+			item2s[i].y = ranY;
+
+			break; // 아이템을 하나 스폰했으면 종료
+		}
+	}
+}
+
+void updateItem2()
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (item2s[i].active)
+		{
+			gotoxy(item2s[i].x, item2s[i].y);
+			putchar(BLANK);
+			// 이전 위치 지우기
+
+			item2s[i].y += 2;
+
+			// 히트박스를 약간 여유롭게 하여 움직일 때 대비 ( 회복 아이템 ) 
+			if (item2s[i].y >= (vader_y - 2) && item2s[i].y <= (vader_y + 2))
+			{
+				if (item2s[i].x >= (vader_x - 2) && item2s[i].x <= (vader_x + 2))
+				{
+					playEffect(tiesound1);
+
+					// 맵 전체에 타이 파이터 스폰
+					spawnEnemy(7, 5);
+					spawnEnemy(12, 5);
+					spawnEnemy(17, 5);
+					spawnEnemy(22, 5);
+					spawnEnemy(27, 5);
+					spawnEnemy(32, 5);
+					spawnEnemy(37, 5);
+					spawnEnemy(42, 5);
+					spawnEnemy(47, 5);
+					spawnEnemy(52, 5);
+					spawnEnemy(57, 5);
+					spawnEnemy(62, 5);
+					spawnEnemy(67, 5);
+					spawnEnemy(72, 5);
+					spawnEnemy(77, 5);
+
+					item2s[i].active = 0;
+				}
+			}
+
+			gotoxy(item2s[i].x, item2s[i].y);
+			textcolor(RED1, GRAY1);
+			printf("@");
+
+			if ((item2s[i].y <= 0))
+			{
+				item2s[i].active = 0; // 화면 밖으로 나가면 비활성화
+			}
+
+			if (item2s[i].y > playArea_y - 2)
+			{
+				item2s[i].active = 0;
+			}
+		}
+		else
+		{
+			gotoxy(item2s[i].x, item2s[i].y);
+			putchar(BLANK);
+		}
+	}
+}
+
+
 void updateUI()
 {
-	textcolor(GREEN1, BLACK);
+	textcolor(GRAY1, BLACK);
+	gotoxy(1, playArea_y + 3);
+	printf("루크 체력");
 
-	gotoxy(0, playArea_y + 2);
-	printf("루크 체력 : %2d", luke_life);
-	gotoxy(0, playArea_y + 3);
-	printf("베이더 체력 : %2d", vader_life);
-	gotoxy(0, playArea_y + 4);
-	printf("현재 점수 : %d ", score);
+	gotoxy(12, playArea_y + 3);
+
+	for (int i = 0; i < WIDTH; i++)
+	{
+		printf(" ");
+	}
+
+	gotoxy(12, playArea_y + 3);
+	for (int i = 0; i < luke_life; i++)
+	{
+		// 현재 남은 체력에 따라 초록색, 노란색, 빨간색 으로 체력바의 색상을 바꾼다.
+		if (luke_life >= 30)
+		{
+			textcolor(BLUE1, BLUE1);
+		}
+		else if (luke_life >= 20 && luke_life < 30)
+		{
+			textcolor(GREEN1, GREEN1);
+		}
+		else if (luke_life >= 10 && luke_life < 20)
+		{
+			textcolor(YELLOW1, YELLOW1);
+		}
+		else
+		{
+			textcolor(RED1, RED1);
+		}
+
+		printf("■");
+	}
+
+	// 디버그용 현재 점수 출력하기!!
+	//textcolor(BLACK, WHITE);
+	//gotoxy(1, playArea_y + 5);
+	//printf("현재 점수 : %d ", score);
+
+	// 현재 점수 계수기
+	char* cylinder[] =
+	{    
+		" ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___",
+		"|  _|_  |  _|_  |  _|_  |  _|_  |  _|_  |  _|_  |",
+		"| |   | | |   | | |   | | |   | | |   | | |   | |",
+		"| |   | | |   | | |   | | |   | | |   | | |   | |",
+		"| |   | | |   | | |   | | |   | | |   | | |   | |",
+		"| |_ _| | |_ _| | |_ _| | |_ _| | |_ _| | |_ _| |",
+		"|___|___|___|___|___|___|___|___|___|___|___|___|"
+	};
+
+	textcolor(GRAY1, BLACK);
+	for (int i = 0; i < 7; i++)
+	{
+		gotoxy(110 , playArea_y + 2 + i);
+		printf("%s", cylinder[i]);
+	}
+
+	textcolor(CYAN1, BLACK);
+
+	int currentScore = score;
+
+	gotoxy(130, playArea_y + 9);
+	printf("현재 점수");
+	gotoxy(114, playArea_y + 5);
+	printf("%d", (currentScore / 100000) % 10);
+	gotoxy(122, playArea_y + 5);
+	printf("%d", (currentScore / 10000) % 10);
+	gotoxy(130, playArea_y + 5);
+	printf("%d", (currentScore / 1000) % 10);
+	gotoxy(138, playArea_y + 5);
+	printf("%d", (currentScore / 100) % 10);
+	gotoxy(146, playArea_y + 5);
+	printf("%d", (currentScore / 10) % 10);
+	gotoxy(154, playArea_y + 5);
+	printf("%d", currentScore % 10);
  }
 
 void startgame()
@@ -607,7 +894,7 @@ void startgame()
 	int speechScore = 0;
 
 	// 체력 초기화
-	luke_life = 15;
+	luke_life = 20;
 	vader_life = 15;
 
 	// 사망 상태 초기화
@@ -802,16 +1089,32 @@ void startgame()
 		// 점수 누적
 		score++;
 
+		if (score % 10 == 0)
+		{
+			spawnItem();
+		}
+
+		if (score % 15 == 0)
+		{
+			spawnItem2();
+		}
+
 		if (score%100 == 0)
 		{
-			spawnEnemy();
-			spawnEnemy();
-			spawnEnemy();
-			spawnEnemy();
+			spawnEnemy(0, 0);
+			spawnEnemy(0, 0);
+			spawnEnemy(0, 0);
+			spawnEnemy(0, 0);
+			spawnEnemy(0, 0);
+			spawnEnemy(0, 0);
 		}
 
 		// 적 갱신
 		updateEnemy();
+
+		// 아이템 갱신
+		updateItem();
+		updateItem2();
 
 		// UI 업데이트 
 		updateUI();
@@ -820,6 +1123,12 @@ void startgame()
 		speechScore++;
 		speech(speechScore);
 
+		if (score >= LUKE_WIN_SCORE)
+		{
+			is_vader_dead = 1; // 루크가 우승 점수에 도달하면 베이더는 사망으로 간주
+			is_luke_win = 1;
+		}
+
 		Sleep(30);
 	}
 }
@@ -827,19 +1136,129 @@ void startgame()
 void result() // 게임 결과 화면
 {
 	system("cls");
+	PlaySound(NULL, NULL, SND_ASYNC); // 모든 사운드 재생 중지
+	stopAllEffects();
+
+	int vaderscore = LUKE_WIN_SCORE - score;
+
+	if (vaderscore <= 0)
+	{
+		vaderscore = 0;
+	}
 
 	if (is_vader_win) // 베이더 승리 ( 루크 사망 ) 
 	{
-		gotoxy(0, 0);
-		printf("베이더 승리");
-	}
-	else if (is_luke_win) // 루크 승리 ( 베이더 사망, 루크 완주 )
-	{
-		gotoxy(0, 0);
-		printf("루크 승리");
+		playEffect(imperialtheme);
+
+		while (1)
+		{
+			system("cls");
+			textcolor(YELLOW1, BLACK);
+
+			for (int i = 0; i < WIDTH - 1; i++)
+			{
+				for (int j = 0; j < HEIGHT - 1; j++)
+				{
+					int rannum = rand() % 100;
+
+					if (rannum == 1)
+					{
+						gotoxy(i, j);
+						printf("*");
+					}
+				}
+			}
+
+			textcolor(RED1, BLACK);
+
+			gotoxy(47, 35);
+			printf("월허프 타킨 총독 : 훌륭하네 베이더 경, 반란 세력은 성공적으로 진압되었네.");
+
+			gotoxy(75, 5);
+			printf("은하 제국 승리");
+			gotoxy(69, 11);
+			printf("루크 스카이워커 점수 : %d", score);
+			gotoxy(72, 12);
+			printf("다스 베이더 점수 : %d", vaderscore);
+			gotoxy(70, 22);
+			printf("inspired by \"STAR WARS\"");
+			gotoxy(70, 24);
+			printf("written and directed by");
+			gotoxy(75, 25);
+			printf("George Lucas");
+			gotoxy(145, 49);
+			printf("ESC로 나가기");
+
+			if (_kbhit())
+			{
+				int input = _getch();
+				if (input == ESC)
+				{
+					system("cls");
+					break;
+				}
+
+			}
+
+			Sleep(500);
+		}
 	}
 
-	gotoxy(100, 30);
+	if (is_luke_win) // 루크 승리 ( 루크 완주 )
+	{
+		playEffect(endtheme);
+		while (1)
+		{
+			system("cls");
+			textcolor(YELLOW1, BLACK);
+
+			for (int i = 0; i < WIDTH - 1; i++)
+			{
+				for (int j = 0; j < HEIGHT - 1; j++)
+				{
+					int rannum = rand() % 100;
+
+					if (rannum == 1)
+					{
+						gotoxy(i, j);
+						printf("*");
+					}
+				}
+			}
+
+			textcolor(CYAN1, BLACK);
+
+			gotoxy(45, 35);
+			printf("장 도돈나 장군 : 목표 파괴 완료. 훌륭한 임무였다 레드 파이브. 포스가 함께하길.");
+
+			gotoxy(75, 5);
+			printf("반란 연합 승리");
+			gotoxy(69, 11);
+			printf("루크 스카이워커 점수 : %d", score);
+			gotoxy(72, 12);
+			printf("다스 베이더 점수 : %d", vaderscore);
+			gotoxy(70, 22);
+			printf("inspired by \"STAR WARS\"");
+			gotoxy(70, 24);
+			printf("written and directed by");
+			gotoxy(75, 25);
+			printf("George Lucas");
+			gotoxy(145, 49);
+			printf("ESC로 나가기");
+
+			if (_kbhit())
+			{
+				int input = _getch();
+				if (input == ESC)
+				{
+					system("cls");
+					break;
+				}
+			}
+
+			Sleep(500);
+		}
+	}
 }
 
 void playOpeningCrawl() {
@@ -1074,7 +1493,7 @@ void howTo()
 {
 	system("cls");
 
-	int padding = 20;
+	int padding = 13;
 	while (1)
 	{
 		textcolor(YELLOW1, BLACK);
@@ -1096,42 +1515,54 @@ void howTo()
 		}
 
 		textcolor(YELLOW1, BLACK);
-		gotoxy(padding, 3);
+		gotoxy(padding, 5);
 		printf("스타워즈 : 데스스타 미션");
 		textcolor(CYAN1, BLACK);
-		gotoxy(padding, 5);
-		printf("> 두 명의 플레이어가 서로 경쟁하는 슈팅 게임입니다.");
 		gotoxy(padding, 7);
+		printf("> 두 명의 플레이어가 한 맵에서 서로 경쟁하는 슈팅 게임입니다. 한 맵이 좌우로 분할되어 '왼쪽' 화면이 '오른쪽' 화면보다 더 앞선 위치입니다.");
+		gotoxy(padding, 9);
 		textcolor(GRAY1, BLACK);
 		printf(">B<");
 		textcolor(RED1, BLACK);
 		printf(" - - - - - -");
-		gotoxy(padding, 9);
-		textcolor(CYAN1, BLACK);
-		printf("> 플레이어 1 ( 루크 스카이워커 ) : WASD 로 이동합니다. V 키를 이용하여 공격, C 키를 이용하여 제자리에 멈춥니다.");
 		gotoxy(padding, 11);
+		textcolor(CYAN1, BLACK);
+		printf("> 플레이어 1 ( 루크 스카이워커 ) : 'WASD' 로 이동합니다. 'V' 키를 이용하여 공격, 'C' 키를 이용하여 제자리에 멈춥니다.");
+		gotoxy(padding, 13);
 		textcolor(GRAY1, BLACK);
 		printf("<O>");
 		textcolor(GREEN1, BLACK);
 		printf(" - - - - - -");
-		gotoxy(padding, 13);
-		textcolor(CYAN1, BLACK);
-		printf("> 플레이어 2 ( 다스 베이더 ) : 방향키로 이동합니다. N 키를 이용하여 공격, M 키를 이용하여 제자리에 멈춥니다.");
 		gotoxy(padding, 15);
+		textcolor(CYAN1, BLACK);
+		printf("> 플레이어 2 ( 다스 베이더 ) : '방향키' 로 이동합니다. 'N' 키를 이용하여 공격, 'M' 키를 이용하여 제자리에 멈춥니다.");
+		gotoxy(padding, 17);
 		textcolor(GRAY1, BLACK);
 		printf("|O|");
 		textcolor(GREEN1, BLACK);
 		printf(" - - - - - -");
-		gotoxy(padding, 17);
+		gotoxy(padding, 19);
 		textcolor(CYAN1, BLACK);
 		printf("> 적 ( 타이 파이터 ) : 일정 확률로 루크 스카이워커 앞에 나타납니다. 루크 스카이워커에게 공격을 발사합니다.");
-		gotoxy(padding, 19);
+		gotoxy(padding, 21);
+		textcolor(CYAN2, BLACK);
+		printf("@");
+		gotoxy(padding, 23);
+		textcolor(CYAN1, BLACK);
+		printf("> 체력 회복 아이템 : 루크 스카이워커의 앞에 나타납니다. 획득 시 루크 스카이워커의 체력을 일정량 회복합니다.");
+		gotoxy(padding, 25);
+		textcolor(RED1, BLACK);
+		printf("@");
+		gotoxy(padding, 27);
+		textcolor(CYAN1, BLACK);
+		printf("> 적 출격 아이템 : 다스 베이더의 앞에 나타납니다. 획득 시 맵 전체에 타이파이터를 출격시킵니다.");
+		gotoxy(padding, 29);
 		textcolor(GRAY1, BLACK);
 		printf("게임 종료 조건");
 		textcolor(CYAN1, BLACK);
-		gotoxy(padding, 21);
-		printf("> 플레이어 1 게임 승리 조건 : 루크 스카이워커는 최대한 오래 살아남아 점수에 도달한 경우 승리로 간주됩니다.");
-		gotoxy(padding, 23);
+		gotoxy(padding, 31);
+		printf("> 플레이어 1 게임 승리 조건 : 루크 스카이워커는 최대한 오래 살아남아 %d 점에 도달한 경우 승리로 간주됩니다.", LUKE_WIN_SCORE);
+		gotoxy(padding, 33);
 		printf("> 플레이어 2 게임 승리 조건 : 다스 베이더는 공격을 발사하여 제한 시간 내에 루크 스카이워커를 처치한 경우 승리로 간주됩니다.");
 
 		gotoxy( WIDTH - 50, HEIGHT - 5);
@@ -1157,6 +1588,18 @@ void mainMenu()
 	{
 		system("cls");
 
+		textcolor(CYAN1, BLACK);
+
+		gotoxy(padding, 6);
+		printf("┌───────────────────────────────────┐");
+		gotoxy(padding, 7);
+		printf("│                                   │");
+		gotoxy(padding, 8);
+		printf("└───────────────────────────────────┘");
+
+		gotoxy(padding + 2, 7);
+		printf("STAR WARS : THE DEATH STAR MISSION");
+
 		textcolor(YELLOW1, BLACK);
 		for (int i = 0; i < WIDTH - 1; i++)
 		{
@@ -1178,8 +1621,8 @@ void mainMenu()
 		printf("컴공 2491111 원진우");
 		gotoxy(120, 48);
 		printf("inspired by \"STAR WARS\" by George Lucas");
-
-		gotoxy(padding, 10);
+;
+		gotoxy(padding + 1, 10);
 		printf("스타워즈 : 데스스타 미션");
 
 		gotoxy(padding, 15);
